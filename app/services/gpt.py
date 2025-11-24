@@ -1,60 +1,6 @@
-'''import os
-from typing import Dict, Any, Optional
-from openai import OpenAI
-
-def build_prompt(face_shape:str, body_shape:str, skin_tone:str,
-                 top:Optional[str], bottom:Optional[str]) -> str:
-    return f"""
-You are a professional fashion stylist AI. 
-Given the user's analyzed attributes and current clothing context, recommend specific styling tips and 5 concrete outfit item suggestions.
-
-User attributes (classified, rule-based):
-- Face shape: {face_shape}
-- Body shape: {body_shape}
-- Skin tone: {skin_tone}
-
-Current clothing context (optional, user-provided):
-- Top: {top or "N/A"}
-- Bottom: {bottom or "N/A"}
-
-Constraints & Goals:
-- Provide styling that compensates for weaknesses and enhances strengths for the given face/body/skin tone.
-- Include silhouette guidance (fit/length), neckline/collar, shoulder structure, rise, hem, and accessories.
-- Color guidance must reference the skin tone (undertone & depth).
-- Suggest 5 concrete items with: [item name], [why it fits], [how to pair], [color alternatives].
-- Output in Korean. Keep it practical and concise, with bullet points.
-
-Return JSON with fields:
-- "summary": short overview (<= 3 sentences)
-- "tips": list of short actionable tips
-- "items": list of 5 dicts {{ "name": ..., "why": ..., "pair": ..., "colors": [...] }}
-"""
-
-def recommend(face_shape:str, body_shape:str, skin_tone:str,
-              top:Optional[str], bottom:Optional[str],
-              model:str="gpt-4.1-mini", temperature:float=0.7) -> Dict[str, Any]:
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    prompt = build_prompt(face_shape, body_shape, skin_tone, top, bottom)
-    resp = client.responses.create(
-        model=model,
-        input=[{"role":"user","content":prompt}],
-        temperature=temperature
-    )
-
-    text = ""
-    try:
-        text = resp.output[0].content[0].text
-    except Exception:
-        text = getattr(resp, "output_text", str(resp))
-
-    import json
-    try:
-        parsed = json.loads(text)
-    except Exception:
-        parsed = {"raw": text}
-    return {"raw": text, "json": parsed}
-'''
 # -*- coding: utf-8 -*-
+from dotenv import load_dotenv
+load_dotenv()  # .env 파일에서 환경 변수 자동 로드
 import os, json
 from typing import Dict, Any, Optional
 from openai import OpenAI

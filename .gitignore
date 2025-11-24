@@ -26,6 +26,7 @@ outputs/
 
 # Dataset (ignore all images but keep folder)
 *.zip
+data/*
 data/Humans/*
 data/Humans.zip
 !data/Humans/.gitkeep
@@ -33,3 +34,10 @@ data/Humans.zip
 # OS
 .DS_Store
 Thumbs.db
+.env 
+
+# Secrets / API keys
+.env
+*.env
+ 
+ 

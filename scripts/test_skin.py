@@ -7,15 +7,15 @@ from app.classifiers import skin
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("image")
-    p.add_argument("--out", default=None)
+    p.add_argument("--out", default=None, help="디버그 이미지 저장 경로 (예: outputs/skin_debug.png)")
     args = p.parse_args()
 
     bgr = load_image_bgr_from_path(args.image)
-    res = skin.classify(bgr, return_debug=bool(args.out))
+    res, debug_png = skin.classify(bgr, return_debug=bool(args.out))
     print(res)
 
-    if args.out and res.get("debug_image"):
+    if args.out and debug_png:
         os.makedirs(os.path.dirname(args.out), exist_ok=True)
         with open(args.out, "wb") as f:
-            f.write(res["debug_image"])
-        print(f"[saved] {args.out}")
+            f.write(debug_png)
+        print(f"[saved] {args.out} ({len(debug_png)} bytes)")

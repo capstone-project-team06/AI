@@ -1,6 +1,7 @@
-import sys, os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from typing import Dict, Any
+# -*- coding: utf-8 -*-
+#import sys, os
+#sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from typing import Dict, Any, Tuple
 import numpy as np
 import mediapipe as mp
 import cv2
@@ -25,17 +26,15 @@ def draw_debug(bgr: np.ndarray, res) -> np.ndarray:
         )
     return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 
-def classify(bgr, return_debug: bool=False) -> Dict[str, Any]:
+def classify(bgr, return_debug: bool=False) -> Tuple[Dict[str, Any], bytes]:
     """체형 분류: inverted_triangle/triangle/hourglass/rectangle/balanced/unknown"""
     rgb = to_rgb(bgr)
     with mp_pose.Pose(static_image_mode=True, enable_segmentation=False) as pose:
         res = pose.process(rgb)
 
     if not res.pose_landmarks:
-        out = {"body_shape":"unknown", "metrics":None, "debug":"no_pose"}
-        if return_debug:
-            out["debug_image"] = b""
-        return out
+        out = {"body_shape": "unknown", "metrics": None, "debug": "no_pose"}
+        return out, b""
     
     lm = res.pose_landmarks.landmark
     h, w = rgb.shape[:2]
@@ -70,8 +69,10 @@ def classify(bgr, return_debug: bool=False) -> Dict[str, Any]:
         "debug":"ok"
     }
     
+    debug_png = b""
     if return_debug:
         dbg = draw_debug(bgr, res)
-        success, buf = cv2.imencode(".png", dbg)
-        out["debug_image"] = buf.tobytes() if success else b""
-    return out
+        ok, buf = cv2.imencode(".png", dbg)
+        debug_png = buf.tobytes() if ok else b""
+
+    return out, debug_png
