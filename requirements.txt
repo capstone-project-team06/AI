@@ -51,3 +51,14 @@ typing_extensions==4.15.0
 uvicorn==0.30.6
 watchfiles==1.1.0
 websockets==15.0.1
+openai>=1.55.0
+fastapi
+uvicorn[standard]
+opencv-python
+numpy
+Pillow
+requests
+python-dotenv
+pydantic>=1.10
+pydantic-settings
+google-search-results
