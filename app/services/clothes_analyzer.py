@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import json
 from typing import Dict, Any, List, Optional
-from outfit_embedding import style_to_vec
+from .outfit_embedding import style_to_vec
 from dotenv import load_dotenv
 from openai import OpenAI
 
