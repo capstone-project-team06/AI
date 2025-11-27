@@ -77,49 +77,30 @@ app = FastAPI(
 #    유저/연예인 사진 → UserAnalysisDTO
 # ======================================================
 @app.post("/user/analyze-photo", response_model=UserAnalyzeResponse)
-async def analyze_user_photo(
-    image: UploadFile = File(...),
+async def analyze_user_photo_multi(
+    face_image: UploadFile = File(...),
+    body_image: UploadFile = File(...),
 ):
     """
-    유저 또는 연예인 사진 1장을 받아
-    얼굴형/체형/피부톤 분석 + feature vector 생성.
+    - face_image: 얼굴 위주 사진 (셀카 느낌)
+      -> face_shape, skin_tone 분석
+    - body_image: 전신 사진
+      -> body_shape 분석
 
-    백엔드 흐름 예:
-      - 클라이언트가 유저/연예인 사진을 업로드
-      - 백엔드가 이 이미지를 그대로 /user/analyze-photo 에 포워딩
-      - 여기서 받은 UserAnalysisDTO를 UserAnalysis 테이블에 저장
+    최종적으로 face/body/skin + vector 를 한 번에 리턴.
     """
-    bgr = load_image_bgr_from_bytes(await image.read())
 
-    face_res, _ = face_mod.classify(bgr, return_debug=False)
-    body_res, _ = body_mod.classify(bgr, return_debug=False)
-    skin_res, _ = skin_mod.classify(bgr, return_debug=False)
+    # 1) 얼굴/피부용 이미지 로드
+    face_bgr = load_image_bgr_from_bytes(await face_image.read())
+    face_res, _ = face_mod.classify(face_bgr, return_debug=False)
+    # 피부톤도 얼굴 위주 샷에서 뽑는 게 자연스럽다면:
+    skin_res, _ = skin_mod.classify(face_bgr, return_debug=False)
 
-    vec = build_feature_vector(face_res, body_res, skin_res)
+    # 2) 체형용 이미지 로드
+    body_bgr = load_image_bgr_from_bytes(await body_image.read())
+    body_res, _ = body_mod.classify(body_bgr, return_debug=False)
 
-    analysis = UserAnalysisDTO(
-        id=None,          # 실제 PK는 백엔드 DB에서 채움
-        user_id=None,     # 유저/연예인 id 매핑도 백엔드에서
-        face_shape=face_res.get("face_shape", "unknown"),
-        body_shape=body_res.get("body_shape", "unknown"),
-        skin_tone=skin_res.get("skin_tone", "unknown"),
-        vector=vec,
-    )
-
-    return UserAnalyzeResponse(analysis=analysis)
-
-class AnalyzeUserUrlRequest(BaseModel):
-    image_url: str
-
-@app.post("/user/analyze-url", response_model=UserAnalyzeResponse)
-async def analyze_user_photo_url(payload: AnalyzeUserUrlRequest):
-    data = analyze_image_from_url(payload.image_url)
-
-    # analyze_image_from_url 은 face/body/skin만 리턴하므로 여기서 vector 생성
-    face_res = data["face"]
-    body_res = data["body"]
-    skin_res = data["skin"]
-
+    # 3) 공통 feature vector 생성 (기존 build_feature_vector 재사용)
     vec = build_feature_vector(face_res, body_res, skin_res)
 
     analysis = UserAnalysisDTO(
@@ -132,6 +113,38 @@ async def analyze_user_photo_url(payload: AnalyzeUserUrlRequest):
     )
 
     return UserAnalyzeResponse(analysis=analysis)
+
+class AnalyzeUserUrlMultiRequest(BaseModel):
+    face_image_url: str
+    body_image_url: str
+
+@app.post("/user/analyze-url-multi", response_model=UserAnalyzeResponse)
+async def analyze_user_url_multi(payload: AnalyzeUserUrlMultiRequest):
+    # 1) 얼굴/피부
+    face_data = analyze_image_from_url(payload.face_image_url)
+    # 여기선 face_data 안에 face/body/skin 다 있지만,
+    # 얼굴샷이니까 face/skin만 쓰고 body는 무시해도 됨
+    face_res = face_data["face"]
+    skin_res = face_data["skin"]
+
+    # 2) 전신
+    body_data = analyze_image_from_url(payload.body_image_url)
+    body_res = body_data["body"]
+
+    # 3) vector 생성
+    vec = build_feature_vector(face_res, body_res, skin_res)
+
+    analysis = UserAnalysisDTO(
+        id=None,
+        user_id=None,
+        face_shape=face_res.get("face_shape", "unknown"),
+        body_shape=body_res.get("body_shape", "unknown"),
+        skin_tone=skin_res.get("skin_tone", "unknown"),
+        vector=vec,
+    )
+
+    return UserAnalyzeResponse(analysis=analysis)
+
 
 # ======================================================
 # 2) POST /ai/clothes/analyze
