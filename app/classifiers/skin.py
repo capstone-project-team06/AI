@@ -51,13 +51,21 @@ def classify(bgr, return_debug: bool=False) -> Tuple[Dict[str, Any], bytes]:
     L, a, b = lab[:,:,0].mean(), lab[:,:,1].mean(), lab[:,:,2].mean()
     H, S, V = hsv[:,:,0].mean(), hsv[:,:,1].mean(), hsv[:,:,2].mean()
 
+    # ----- depth(밝기) -----
     depth = "light" if L >= 180 else ("medium" if L >= 130 else "deep")
-    warm_score = (a - 128) + 0.8*(b - 128) + 0.003*(S - 128)
-    cool_score = (-(a - 128)) + 0.2*(128 - b) + 0.001*(V - 128)
 
-    if warm_score - cool_score > 5:
+    # ----- undertone (3-1 전역 threshold 버전) -----
+    da = a - 128
+    db = b - 128
+
+    # 노랑/빨강 쪽으로 치우친 정도 (웜톤 점수)
+    score = da + 0.8 * db
+
+    T = 6.0  # 임계값: 나중에 데이터 보면서 5~8 사이에서 조정
+
+    if score > T:
         undertone = "warm"
-    elif cool_score - warm_score > 5:
+    elif score < -T:
         undertone = "cool"
     else:
         undertone = "neutral"
