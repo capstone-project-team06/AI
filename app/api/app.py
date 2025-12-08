@@ -213,7 +213,7 @@ async def ai_style_analyze(payload: StyleAnalyzeRequest):
         )
 
     # 2) GPT Vision 분석
-    outfit_json = analyze_outfit_with_gpt([image_urls[0]]) # 첫 번째 레퍼런스만 분석하게 변경
+    outfit_json = analyze_outfit_with_gpt(image_urls) # 첫 번째 레퍼런스만 분석하게 변경
 
     looks = outfit_json.get("looks", []) or []
     summary = outfit_json.get("summary", "")
